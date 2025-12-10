@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # MySQL Database
+  # ==========================================
+  mysql:
+    image: mysql:8.0
+    container_name: tecsup-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-tecsup_rooms}
+      MYSQL_USER: ${DB_USERNAME:-tecsup_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-tecsup_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - tecsup-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Backend NestJS
+  # ==========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tecsup-backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      # Database
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME:-tecsup_user}
+      DB_PASSWORD: ${DB_PASSWORD:-tecsup_password}
+      DB_NAME: ${DB_NAME:-tecsup_rooms}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      
+      # URLs
+      FRONTEND_URL: ${FRONTEND_URL}
+      LOGIN_URL_PROD: ${LOGIN_URL_PROD}
+      
+      # AWS S3
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_S3_BASE_URL: ${AWS_S3_BASE_URL}
+      
+      # Email
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      
+      # App
+      APP_PORT: 4000
+      NODE_ENV: production
+      
+      # Google Gemini AI
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GEMINI_MODEL_NAME: ${GEMINI_MODEL_NAME:-gemini-2.5-flash}
+      
+      # Storage
+      MAX_IMAGE_SIZE_MB: ${MAX_IMAGE_SIZE_MB:-100}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - tecsup-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  tecsup-network:
+    driver: bridge

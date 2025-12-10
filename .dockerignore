@@ -1,0 +1,29 @@
+# Ignorar dependencias y builds
+node_modules
+npm-debug.log
+dist
+
+# Archivos de entorno (no subir a git)
+.env
+.env.local
+.env.production
+
+# Archivos de desarrollo
+.git
+.gitignore
+*.md
+.vscode
+.idea
+
+# Archivos de log
+logs
+*.log
+
+# Tests
+coverage
+test
+*.spec.ts
+
+# Archivos temporales
+tmp
+temp
