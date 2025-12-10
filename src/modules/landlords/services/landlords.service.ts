@@ -10,7 +10,7 @@ export class LandlordsService {
   constructor(
     @InjectRepository(LandlordProfile)
     private readonly repo: Repository<LandlordProfile>,
-  ) {}
+  ) { }
 
   async create(dto: CreateLandlordDto) {
     const existing = await this.repo.findOne({ where: { userId: dto.userId } });

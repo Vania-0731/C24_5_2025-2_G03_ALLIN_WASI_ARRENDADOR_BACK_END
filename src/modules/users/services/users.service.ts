@@ -16,7 +16,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly rolesService: RolesService,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.userRepository.findOne({
@@ -121,8 +121,24 @@ export class UsersService {
       if (updateData.landlord) {
         const landlordRepo = queryRunner.manager.getRepository(LandlordProfile);
         let landlord = await landlordRepo.findOne({ where: { userId: id } });
-        const { phone, dni, address } = updateData.landlord as any;
+        const { phone, dni, address, dniFrontUrl, dniBackUrl, utilityBillUrl } = updateData.landlord as any;
         const propsCount = (updateData.landlord as any).propertiesCount ?? (updateData.landlord as any).propertyCount;
+
+        // Check if documents are being updated
+        const isUpdatingDocuments = dniFrontUrl !== undefined || dniBackUrl !== undefined || utilityBillUrl !== undefined;
+
+        // If landlord exists with pending/verified status, block document updates
+        if (landlord && isUpdatingDocuments) {
+          const currentStatus = landlord.verificationStatus;
+          if (currentStatus === 'pending' || currentStatus === 'verified') {
+            throw new BadRequestException(
+              currentStatus === 'pending'
+                ? 'No puedes modificar los documentos mientras están en revisión.'
+                : 'Los documentos verificados no pueden ser modificados. Contacta a soporte si necesitas hacer cambios.'
+            );
+          }
+        }
+
         if (!landlord) {
           landlord = landlordRepo.create({
             userId: id,
@@ -130,12 +146,26 @@ export class UsersService {
             dni: dni ?? '',
             address: address ?? '',
             propertyCount: (propsCount ?? '').toString(),
+            dniFrontUrl: dniFrontUrl ?? null,
+            dniBackUrl: dniBackUrl ?? null,
+            utilityBillUrl: utilityBillUrl ?? null,
+            verificationStatus: 'pending', // Set to pending when first submitting documents
           });
         } else {
           if (phone !== undefined) landlord.phone = phone;
           if (dni !== undefined) landlord.dni = dni;
           if (address !== undefined) landlord.address = address;
           if (propsCount !== undefined) landlord.propertyCount = String(propsCount);
+
+          // Only update documents if allowed (status is 'rejected' or empty)
+          if (dniFrontUrl !== undefined) landlord.dniFrontUrl = dniFrontUrl;
+          if (dniBackUrl !== undefined) landlord.dniBackUrl = dniBackUrl;
+          if (utilityBillUrl !== undefined) landlord.utilityBillUrl = utilityBillUrl;
+
+          // If documents are being updated, set status back to pending
+          if (isUpdatingDocuments) {
+            landlord.verificationStatus = 'pending';
+          }
         }
 
         await landlordRepo.save(landlord);

@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Options, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard, Public } from '../auth/guards/jwt-auth.guard';
 import { CreatePresignDto } from './dto/create-presign.dto';
+import { LandlordDocumentPresignDto } from './dto/landlord-document-presign.dto';
 import { StorageService } from './storage.service';
 
 @ApiTags('Storage')
@@ -10,7 +11,7 @@ import { StorageService } from './storage.service';
 @UseGuards(JwtAuthGuard)
 @Controller('storage')
 export class StorageController {
-  constructor(private readonly storage: StorageService) {}
+  constructor(private readonly storage: StorageService) { }
 
   @Post('presign')
   @ApiOperation({ summary: 'Genera URL firmada para subir a S3 (PUT)' })
@@ -28,6 +29,22 @@ export class StorageController {
       filename: dto.filename,
     } as CreatePresignDto;
     return this.storage.presignPut(body, req.user?.id, req.user?.role);
+  }
+
+  @Post('presign/landlord-documents')
+  @ApiOperation({
+    summary: 'Genera URLs firmadas para documentos de verificación del arrendador',
+    description: 'Genera 3 URLs pre-firmadas para subir: DNI frontal, DNI trasero y recibo de luz/agua. Los archivos se guardan en la carpeta datos-arrendador/ con nombres basados en el DNI.'
+  })
+  @ApiResponse({ status: 201, description: 'URLs generadas exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  async presignLandlordDocuments(@Body() dto: LandlordDocumentPresignDto, @Req() req: any) {
+    return this.storage.presignLandlordDocuments(
+      dto.dni,
+      dto.dniFrontContentType,
+      dto.dniBackContentType,
+      dto.utilityBillContentType,
+    );
   }
 
   @Options('proxy')
@@ -50,48 +67,48 @@ export class StorageController {
 
     try {
       const s3Key = this.storage.extractS3KeyFromUrl(url);
-      
+
       if (!s3Key) {
         res.status(400).json({ message: 'URL no válida para este bucket' });
         return;
       }
 
       const { body, contentType } = await this.storage.getObject(s3Key);
-      
+
       res.setHeader('Content-Type', contentType);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      
+
       const MAX_SIZE_MB = process.env.MAX_IMAGE_SIZE_MB ? parseInt(process.env.MAX_IMAGE_SIZE_MB) : 100;
       const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-      
+
       if (body && typeof body.pipe === 'function') {
         return new Promise<void>((resolve, reject) => {
           let totalSize = 0;
           let finished = false;
-          
+
           const cleanup = () => {
             if (!finished) {
               finished = true;
             }
           };
-          
+
           body.on('data', (chunk: Buffer) => {
             totalSize += chunk.length;
             if (totalSize > MAX_SIZE_BYTES) {
               body.destroy();
               if (!res.headersSent) {
-                res.status(413).json({ 
-                  message: `Archivo demasiado grande. Tamaño máximo: ${MAX_SIZE_MB}MB. Tamaño actual: ${(totalSize / 1024 / 1024).toFixed(2)}MB` 
+                res.status(413).json({
+                  message: `Archivo demasiado grande. Tamaño máximo: ${MAX_SIZE_MB}MB. Tamaño actual: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
                 });
               }
               cleanup();
               reject(new Error('Archivo demasiado grande'));
             }
           });
-          
+
           body.on('error', (err: any) => {
             cleanup();
             if (!res.headersSent) {
@@ -101,43 +118,36 @@ export class StorageController {
             }
             reject(err);
           });
-          
           res.on('error', (err: any) => {
             cleanup();
             reject(err);
           });
-          
           res.on('finish', () => {
             cleanup();
             resolve();
           });
-          
           res.on('close', () => {
             cleanup();
             resolve();
           });
-          
           (body as any).pipe(res);
         });
       } else {
         const chunks: Buffer[] = [];
         let totalSize = 0;
-        
+
         try {
           for await (const chunk of body as any) {
             const buffer = Buffer.from(chunk);
             totalSize += buffer.length;
-            
             if (totalSize > MAX_SIZE_BYTES) {
-              res.status(413).json({ 
-                message: `Archivo demasiado grande. Tamaño máximo: ${MAX_SIZE_MB}MB. Tamaño actual: ${(totalSize / 1024 / 1024).toFixed(2)}MB` 
+              res.status(413).json({
+                message: `Archivo demasiado grande. Tamaño máximo: ${MAX_SIZE_MB}MB. Tamaño actual: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
               });
               return;
             }
-            
             chunks.push(buffer);
           }
-          
           const finalBuffer = Buffer.concat(chunks);
           res.send(finalBuffer);
         } catch (streamError: any) {

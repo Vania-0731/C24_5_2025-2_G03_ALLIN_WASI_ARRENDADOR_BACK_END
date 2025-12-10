@@ -95,11 +95,11 @@ export class ChatService {
       .createQueryBuilder('m')
       .leftJoinAndSelect('m.sender', 'sender')
       .where('m.conversationId = :cid', { cid: conversationId })
-      .orderBy('m.createdAt', 'DESC')
+      .orderBy('m.createdAt', 'ASC')
       .limit(limit);
     if (before) qb.andWhere('m.createdAt < :before', { before: new Date(before) });
     const rows = await qb.getMany();
-    return rows.reverse();
+    return rows;
   }
 
   async sendMessage(conversationId: string, senderId: string, content: string) {

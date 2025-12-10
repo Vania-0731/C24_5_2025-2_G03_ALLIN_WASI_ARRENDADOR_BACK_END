@@ -14,14 +14,14 @@ export class StorageService {
   constructor(private readonly propertiesService: PropertiesService) {
     this.region = process.env.AWS_REGION || 'us-east-1';
     this.bucket = process.env.AWS_S3_BUCKET || '';
-    
+
     const credentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
       ? {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        }
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
       : undefined;
-    
+
     this.s3 = new S3Client({
       region: this.region,
       credentials,
@@ -132,7 +132,7 @@ export class StorageService {
 
     try {
       const response = await this.s3.send(command);
-      
+
       return {
         body: response.Body,
         contentType: response.ContentType || 'application/octet-stream',
@@ -147,11 +147,59 @@ export class StorageService {
 
   extractS3KeyFromUrl(url: string): string | null {
     const baseUrl = process.env.AWS_S3_BASE_URL || `https://${this.bucket}.s3.${this.region}.amazonaws.com`;
-    
+
     if (!url.startsWith(baseUrl)) {
       return null;
     }
-    
+
     return url.replace(baseUrl + '/', '');
   }
+
+  async presignLandlordDocuments(
+    dni: string,
+    dniFrontContentType: string,
+    dniBackContentType: string,
+    utilityBillContentType: string,
+  ) {
+    const folder = 'datos-arrendador';
+    const baseUrl = process.env.AWS_S3_BASE_URL || `https://${this.bucket}.s3.${this.region}.amazonaws.com`;
+
+    const getExtension = (contentType: string): string => {
+      const parts = contentType.split('/');
+      return parts.length > 1 ? parts[1].replace('jpeg', 'jpg') : 'jpg';
+    };
+
+    const generatePresignedUrl = async (filename: string, contentType: string) => {
+      const key = `${folder}/${filename}`;
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      });
+      const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 60 * 10 }); // 10 minutes
+      return {
+        uploadUrl,
+        resourceUrl: `${baseUrl}/${key}`,
+        key,
+      };
+    };
+
+    const dniFrontExt = getExtension(dniFrontContentType);
+    const dniBackExt = getExtension(dniBackContentType);
+    const utilityBillExt = getExtension(utilityBillContentType);
+
+    const [dniFront, dniBack, utilityBill] = await Promise.all([
+      generatePresignedUrl(`dni-cara-${dni}.${dniFrontExt}`, dniFrontContentType),
+      generatePresignedUrl(`dni-cara-atras-${dni}.${dniBackExt}`, dniBackContentType),
+      generatePresignedUrl(`recibo-luz-${dni}.${utilityBillExt}`, utilityBillContentType),
+    ]);
+
+    return {
+      dniFront,
+      dniBack,
+      utilityBill,
+      expiresIn: 600,
+    };
+  }
 }
+

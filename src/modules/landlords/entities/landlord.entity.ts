@@ -32,6 +32,26 @@ export class LandlordProfile {
   @Column({ type: 'varchar', length: 20, default: '' })
   propertyCount: string;
 
+  @ApiProperty({ description: 'URL of the front side of the DNI document' })
+  @Column({ nullable: true, length: 500 })
+  dniFrontUrl: string;
+
+  @ApiProperty({ description: 'URL of the back side of the DNI document' })
+  @Column({ nullable: true, length: 500 })
+  dniBackUrl: string;
+
+  @ApiProperty({ description: 'URL of the utility bill (electricity/water) for address verification' })
+  @Column({ nullable: true, length: 500 })
+  utilityBillUrl: string;
+
+  @ApiProperty({ description: 'Verification status of the landlord documents', enum: ['pending', 'verified', 'rejected'] })
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  verificationStatus: string;
+
+  @ApiProperty({ description: 'Message from admin when documents are rejected (reason for rejection)' })
+  @Column({ nullable: true, length: 500 })
+  verificationMessage: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

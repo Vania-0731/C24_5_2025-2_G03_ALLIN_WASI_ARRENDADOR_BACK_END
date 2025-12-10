@@ -25,4 +25,20 @@ export class CreateLandlordDto {
   @IsOptional()
   @IsString()
   propertyCount?: string;
+
+  @ApiProperty({ description: 'URL of the front side of the DNI document', required: false })
+  @IsOptional()
+  @IsString()
+  dniFrontUrl?: string;
+
+  @ApiProperty({ description: 'URL of the back side of the DNI document', required: false })
+  @IsOptional()
+  @IsString()
+  dniBackUrl?: string;
+
+  @ApiProperty({ description: 'URL of the utility bill for address verification', required: false })
+  @IsOptional()
+  @IsString()
+  utilityBillUrl?: string;
 }
+

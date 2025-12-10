@@ -23,6 +23,18 @@ export class UpdateLandlordDto {
     @IsString()
     @IsOptional()
     propertiesCount?: string;
+
+    @IsString()
+    @IsOptional()
+    dniFrontUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    dniBackUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    utilityBillUrl?: string;
 }
 
 export class UpdateUserLandlordDto {
