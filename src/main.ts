@@ -11,10 +11,16 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
+      // Dominios de producción
+      'http://aliwasi.duckdns.org',
+      'https://aliwasi.duckdns.org',
+      'http://allinwasi.duckdns.org',
+      'https://allinwasi.duckdns.org',
+      'http://allinwasi.duckdns.org:4000',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
   });
 
   app.useGlobalPipes(new ValidationPipe({
