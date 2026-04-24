@@ -201,6 +201,18 @@ export class UsersController {
     return await this.usersService.updateUserAndLandlord(req.user.id, updateData);
   }
 
+  @Put('me/tenant-profile')
+  @ApiOperation({
+    summary: 'Actualizar perfil del inquilino autenticado (usuario + tenant) en una sola transacción',
+    description: 'Actualiza el nombre del usuario y los datos de tenant para el usuario autenticado.'
+  })
+  async updateMyTenantProfile(
+    @Req() req: Request & { user: User },
+    @Body(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false })) updateData: any, // Or use UpdateUserTenantDto
+  ) {
+    return await this.usersService.updateUserAndTenant(req.user.id, updateData);
+  }
+
   @Put(':id/profile')
   @ApiOperation({ 
     summary: 'Actualizar perfil (usuario + landlord) en una sola transacción',

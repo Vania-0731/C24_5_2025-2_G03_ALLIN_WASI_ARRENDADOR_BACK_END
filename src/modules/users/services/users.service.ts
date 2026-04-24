@@ -184,6 +184,71 @@ export class UsersService {
     }
   }
 
+  async updateUserAndTenant(
+    id: string,
+    updateData: any // Use any or create a specific type
+  ): Promise<{ message: string; user: User }> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id },
+      });
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+      if (updateData.user) {
+        Object.assign(user, updateData.user);
+      }
+      if (updateData.tenant) {
+        const tenantRepo = queryRunner.manager.getRepository(Tenant);
+        let tenant = await tenantRepo.findOne({ where: { userId: id } });
+        const { 
+          phone, code, career, cicle, monthly_budget, 
+          origin_department, studentIDCardUrl 
+        } = updateData.tenant;
+
+        if (!tenant) {
+          tenant = tenantRepo.create({
+            userId: id,
+            phone: phone ?? '',
+            code: code ?? '',
+            carrer: career ?? '', // Note the typo 'carrer' in entity
+            cicle: cicle ?? '',
+            monthly_budget: monthly_budget ?? 0,
+            origin_department: origin_department ?? '',
+            studentIDCardUrl: studentIDCardUrl ?? null,
+            verificationStatus: studentIDCardUrl ? 'pending' : 'pending',
+          });
+        } else {
+          if (phone !== undefined) tenant.phone = phone;
+          if (code !== undefined) tenant.code = code;
+          if (career !== undefined) tenant.carrer = career;
+          if (cicle !== undefined) tenant.cicle = cicle;
+          if (monthly_budget !== undefined) tenant.monthly_budget = monthly_budget;
+          if (origin_department !== undefined) tenant.origin_department = origin_department;
+          if (studentIDCardUrl !== undefined) {
+            tenant.studentIDCardUrl = studentIDCardUrl;
+            tenant.verificationStatus = 'pending';
+          }
+        }
+        await tenantRepo.save(tenant);
+      }
+      const updatedUser = await queryRunner.manager.save(User, user);
+      await queryRunner.commitTransaction();
+      return {
+        message: 'Datos actualizados exitosamente',
+        user: updatedUser,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
 
   async checkRegistrationStatus(id: string): Promise<{
     isComplete: boolean;

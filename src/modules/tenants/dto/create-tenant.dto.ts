@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, Length, Matches, IsNumberString } from 'class-validator';
+import { IsString, Length, Matches, IsNumberString, IsOptional } from 'class-validator';
 
 export class CreateTenantDto {
   @ApiProperty()
@@ -34,4 +34,9 @@ export class CreateTenantDto {
   @IsString()
   @Length(2, 100)
   origin_department: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  studentIDCardUrl?: string;
 }

@@ -47,6 +47,18 @@ export class StorageController {
     );
   }
 
+  @Post('presign/tenant-documents')
+  @ApiOperation({
+    summary: 'Genera URL firmada para carnet de estudiante del arrendatario',
+    description: 'Genera URL pre-firmada para subir el carnet de estudiante. Se guarda en la carpeta datos-estudiante/'
+  })
+  async presignTenantDocuments(@Body() dto: { studentCode: string, contentType: string }, @Req() req: any) {
+    return this.storage.presignTenantDocuments(
+      dto.studentCode,
+      dto.contentType,
+    );
+  }
+
   @Options('proxy')
   @Public()
   async proxyOptions(@Res() res: Response) {

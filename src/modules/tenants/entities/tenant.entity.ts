@@ -41,6 +41,14 @@ export class Tenant {
   @Column({ length: 100 })
   origin_department: string;
 
+  @ApiProperty({ description: 'URL of the student ID card' })
+  @Column({ nullable: true, length: 500 })
+  studentIDCardUrl: string;
+
+  @ApiProperty({ description: 'Verification status of the tenant', enum: ['pending', 'verified', 'rejected'] })
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  verificationStatus: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

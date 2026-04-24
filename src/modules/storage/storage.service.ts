@@ -201,5 +201,31 @@ export class StorageService {
       expiresIn: 600,
     };
   }
+
+  async presignTenantDocuments(studentCode: string, contentType: string) {
+    const folder = 'datos-estudiante';
+    const baseUrl = process.env.AWS_S3_BASE_URL || `https://${this.bucket}.s3.${this.region}.amazonaws.com`;
+
+    const getExtension = (contentType: string): string => {
+      const parts = contentType.split('/');
+      return parts.length > 1 ? parts[1].replace('jpeg', 'jpg') : 'jpg';
+    };
+
+    const ext = getExtension(contentType);
+    const key = `${folder}/carnet-${studentCode}.${ext}`;
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 60 * 10 }); // 10 minutes
+    return {
+      uploadUrl,
+      resourceUrl: `${baseUrl}/${key}`,
+      key,
+      expiresIn: 600,
+    };
+  }
 }
 
