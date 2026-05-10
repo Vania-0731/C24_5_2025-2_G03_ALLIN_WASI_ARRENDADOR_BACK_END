@@ -14,6 +14,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ActivitiesModule } from './modules/activities/activities.module';
     MediaModule,
     AiModule,
     ActivitiesModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

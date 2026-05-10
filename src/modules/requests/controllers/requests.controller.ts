@@ -52,7 +52,8 @@ export class RequestsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.service.remove(id, req.user.id);
+  async remove(@Param('id') id: string, @Req() req: any) {
+    const tenant = await this.tenantsService.ensureExistsForUser(req.user.id);
+    return this.service.remove(id, tenant.id);
   }
 }

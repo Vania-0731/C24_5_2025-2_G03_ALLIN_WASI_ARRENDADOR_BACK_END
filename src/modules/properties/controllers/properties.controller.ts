@@ -99,6 +99,16 @@ export class PropertiesController {
   async findAll(@Req() req: Request & { user: User }) {
     return await this.propertiesService.findAllByLandlord(req.user.id);
   }
+  
+  @Get('search')
+  @ApiOperation({ 
+    summary: 'Buscar todas las propiedades disponibles',
+    description: 'Obtiene una lista de todas las propiedades con estado "available" para los inquilinos.'
+  })
+  @ApiResponse({ status: 200, description: 'Lista de propiedades obtenida exitosamente' })
+  async search() {
+    return await this.propertiesService.findAllAvailable();
+  }
 
   @Get('stats')
   @ApiOperation({ 
@@ -208,7 +218,8 @@ export class PropertiesController {
     @Param('id') id: string,
     @Req() req: Request & { user: User },
   ) {
-    return await this.propertiesService.findOne(id, req.user.id);
+    const landlordId = req.user.role?.name === 'landlord' ? req.user.id : undefined;
+    return await this.propertiesService.findOne(id, landlordId);
   }
 
   @Patch(':id')

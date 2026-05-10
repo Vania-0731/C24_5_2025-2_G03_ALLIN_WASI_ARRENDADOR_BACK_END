@@ -16,6 +16,15 @@ export class RequestsService {
   ) {}
 
   async create(dto: CreateRequestDto, tenantId: string) {
+    const existing = await this.repo.findOne({
+      where: { tenantId, propertyId: dto.propertyId },
+      withDeleted: true,
+    });
+
+    if (existing) {
+      throw new ForbiddenException('Ya tienes una solicitud para esta propiedad (puede estar pendiente, aceptada o cancelada)');
+    }
+
     const entity = this.repo.create({ ...dto, tenantId });
     const saved = await this.repo.save(entity);
     this.activities.logActivity(
@@ -49,7 +58,12 @@ export class RequestsService {
   async listForTenant(tenantId: string, status?: RequestStatus) {
     const where: any = { tenantId };
     if (status) where.status = status;
-    return this.repo.find({ where, relations: ['property'] , order: { createdAt: 'DESC' } });
+    return this.repo.find({ 
+      where, 
+      relations: ['property', 'property.images'], 
+      order: { createdAt: 'DESC' },
+      withDeleted: true
+    });
   }
 
   async updateStatus(id: string, status: RequestStatus, landlordId: string) {
@@ -84,7 +98,15 @@ export class RequestsService {
     if (userTenantId && req.tenantId !== userTenantId) {
       throw new ForbiddenException('No puedes eliminar esta solicitud');
     }
-    await this.repo.remove(req);
-    return { message: 'Solicitud eliminada' };
+    
+    // Cambiamos el estado a cancelado antes de eliminar lógicamente
+    req.status = RequestStatus.CANCELLED;
+    await this.repo.save(req);
+    
+    // Soft delete
+    req.deletedAt = new Date();
+    await this.repo.save(req);
+    
+    return { message: 'Solicitud cancelada y eliminada lógicamente' };
   }
 }
