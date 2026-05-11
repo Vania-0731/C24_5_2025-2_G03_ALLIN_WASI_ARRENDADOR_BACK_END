@@ -170,7 +170,7 @@ export class PropertiesService {
 
     const property = await this.propertyRepository.findOne({
       where: whereCondition,
-      relations: ['images', 'features', 'landlord'],
+      relations: ['images', 'features', 'landlord', 'landlord.properties'],
     });
 
     if (!property) {

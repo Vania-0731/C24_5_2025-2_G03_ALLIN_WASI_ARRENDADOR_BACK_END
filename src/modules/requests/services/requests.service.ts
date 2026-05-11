@@ -60,7 +60,7 @@ export class RequestsService {
     if (status) where.status = status;
     return this.repo.find({ 
       where, 
-      relations: ['property', 'property.images'], 
+      relations: ['property', 'property.images', 'property.landlord'], 
       order: { createdAt: 'DESC' },
       withDeleted: true
     });
