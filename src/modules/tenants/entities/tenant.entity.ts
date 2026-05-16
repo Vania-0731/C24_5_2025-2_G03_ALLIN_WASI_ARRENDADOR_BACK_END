@@ -27,7 +27,7 @@ export class Tenant {
 
   @ApiProperty()
   @Column({ length: 100 })
-  carrer: string;
+  career: string;
 
   @ApiProperty()
   @Column({ length: 50 })
@@ -40,6 +40,10 @@ export class Tenant {
   @ApiProperty()
   @Column({ length: 100 })
   origin_department: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'text', nullable: true })
+  bio: string;
 
   @ApiProperty({ description: 'URL of the student ID card' })
   @Column({ nullable: true, length: 500 })

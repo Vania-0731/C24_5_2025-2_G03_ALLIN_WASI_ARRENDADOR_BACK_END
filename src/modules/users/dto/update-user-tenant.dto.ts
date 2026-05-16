@@ -1,13 +1,17 @@
 import { IsString, IsOptional, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class UpdateUserDto {
+export class UpdateUserDto {
     @IsString()
     @IsOptional()
     fullName?: string;
+
+    @IsString()
+    @IsOptional()
+    profilePicture?: string;
 }
 
-class UpdateTenantDto {
+export class UpdateTenantDto {
     @IsString()
     @IsOptional()
     phone?: string;
@@ -24,6 +28,7 @@ class UpdateTenantDto {
     @IsOptional()
     cicle?: string;
 
+    @IsNumber()
     @IsOptional()
     monthly_budget?: number;
 
@@ -34,6 +39,10 @@ class UpdateTenantDto {
     @IsString()
     @IsOptional()
     studentIDCardUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    bio?: string;
 }
 
 export class UpdateUserTenantDto {

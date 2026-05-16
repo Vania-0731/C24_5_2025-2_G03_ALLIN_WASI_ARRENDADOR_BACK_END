@@ -5,6 +5,7 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { User } from '../entities/user.entity';
 import { UpdateUserLandlordDto } from '../dto/update-user-landlord.dto';
+import { UpdateUserTenantDto } from '../dto/update-user-tenant.dto';
 
 @ApiTags('Usuarios')
 @Controller('users')
@@ -206,9 +207,11 @@ export class UsersController {
     summary: 'Actualizar perfil del inquilino autenticado (usuario + tenant) en una sola transacción',
     description: 'Actualiza el nombre del usuario y los datos de tenant para el usuario autenticado.'
   })
+  @ApiBody({ type: UpdateUserTenantDto })
+  @ApiResponse({ status: 200, description: 'Datos actualizados exitosamente' })
   async updateMyTenantProfile(
     @Req() req: Request & { user: User },
-    @Body(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false })) updateData: any, // Or use UpdateUserTenantDto
+    @Body(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false })) updateData: UpdateUserTenantDto,
   ) {
     return await this.usersService.updateUserAndTenant(req.user.id, updateData);
   }

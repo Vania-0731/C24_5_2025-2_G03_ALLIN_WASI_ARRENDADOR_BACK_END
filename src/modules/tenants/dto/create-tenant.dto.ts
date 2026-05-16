@@ -19,7 +19,7 @@ export class CreateTenantDto {
   @ApiProperty()
   @IsString()
   @Length(2, 100)
-  carrer: string;
+  career: string;
 
   @ApiProperty()
   @IsString()

@@ -71,7 +71,7 @@ export class UsersService {
     await this.userRepository.remove(user);
   }
 
-  async getProfile(id: string): Promise<User> {
+  async getProfile(id: string): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['role'],
@@ -84,11 +84,27 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
     if (!user.role && user.roleId) {
       const role = await this.rolesService.findOne(user.roleId);
       user.role = role;
     }
-    return user;
+
+    const roleName = user.role?.name;
+    const response: any = { ...user };
+
+    if (roleName === 'landlord') {
+      const landlord = await this.dataSource.getRepository(LandlordProfile).findOne({ where: { userId: id } });
+      response.landlord = landlord;
+    } else if (roleName === 'tenant') {
+      const tenant = await this.dataSource.getRepository(Tenant).findOne({ where: { userId: id } });
+      response.tenant = tenant;
+    }
+
+    // Also include 'user' property for backward compatibility with my recent change in useMe hook
+    response.user = user;
+
+    return response;
   }
 
   async updateProfile(id: string, updateUserDto: UpdateUserDto): Promise<{ message: string; user: User }> {
@@ -206,7 +222,7 @@ export class UsersService {
         let tenant = await tenantRepo.findOne({ where: { userId: id } });
         const { 
           phone, code, career, cicle, monthly_budget, 
-          origin_department, studentIDCardUrl 
+          origin_department, studentIDCardUrl, bio
         } = updateData.tenant;
 
         if (!tenant) {
@@ -214,20 +230,22 @@ export class UsersService {
             userId: id,
             phone: phone ?? '',
             code: code ?? '',
-            carrer: career ?? '', // Note the typo 'carrer' in entity
+            career: career ?? '',
             cicle: cicle ?? '',
             monthly_budget: monthly_budget ?? 0,
             origin_department: origin_department ?? '',
+            bio: bio ?? '',
             studentIDCardUrl: studentIDCardUrl ?? null,
             verificationStatus: studentIDCardUrl ? 'pending' : 'pending',
           });
         } else {
           if (phone !== undefined) tenant.phone = phone;
           if (code !== undefined) tenant.code = code;
-          if (career !== undefined) tenant.carrer = career;
+          if (career !== undefined) tenant.career = career;
           if (cicle !== undefined) tenant.cicle = cicle;
           if (monthly_budget !== undefined) tenant.monthly_budget = monthly_budget;
           if (origin_department !== undefined) tenant.origin_department = origin_department;
+          if (bio !== undefined) tenant.bio = bio;
           if (studentIDCardUrl !== undefined) {
             tenant.studentIDCardUrl = studentIDCardUrl;
             tenant.verificationStatus = 'pending';
@@ -296,7 +314,7 @@ export class UsersService {
         tenant &&
         tenant.phone && tenant.phone.trim() !== '' &&
         tenant.code && tenant.code.trim() !== '' &&
-        tenant.carrer && tenant.carrer.trim() !== '' &&
+        tenant.career && tenant.career.trim() !== '' &&
         tenant.cicle && tenant.cicle.trim() !== '' &&
         tenant.monthly_budget !== undefined &&
         tenant.origin_department && tenant.origin_department.trim() !== ''
@@ -306,8 +324,8 @@ export class UsersService {
         else { missingFields.push('tenant.phone'); nextSteps.push('Completar teléfono de inquilino'); }
         if (tenant.code && tenant.code.trim() !== '') completedFields.push('tenant.code');
         else { missingFields.push('tenant.code'); nextSteps.push('Agregar código de estudiante'); }
-        if (tenant.carrer && tenant.carrer.trim() !== '') completedFields.push('tenant.carrer');
-        else { missingFields.push('tenant.carrer'); nextSteps.push('Agregar carrera'); }
+        if (tenant.career && tenant.career.trim() !== '') completedFields.push('tenant.career');
+        else { missingFields.push('tenant.career'); nextSteps.push('Agregar carrera'); }
         if (tenant.cicle && tenant.cicle.trim() !== '') completedFields.push('tenant.cicle');
         else { missingFields.push('tenant.cicle'); nextSteps.push('Agregar ciclo'); }
         if (tenant.monthly_budget !== undefined) completedFields.push('tenant.monthly_budget');
