@@ -7,6 +7,7 @@ export enum RequestStatus {
   PENDING = 'pending',
   ACCEPTED = 'accepted',
   REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
 }
 
 @Entity('requests')
@@ -44,4 +45,7 @@ export class Request {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

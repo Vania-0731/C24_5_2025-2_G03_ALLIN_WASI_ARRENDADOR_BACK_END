@@ -154,6 +154,14 @@ export class PropertiesService {
     });
   }
 
+  async findAllAvailable(): Promise<Property[]> {
+    return await this.propertyRepository.find({
+      where: { status: PropertyStatus.AVAILABLE },
+      relations: ['images', 'features', 'landlord'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findOne(id: string, landlordId?: string): Promise<Property> {
     const whereCondition: any = { id };
     if (landlordId) {
@@ -162,7 +170,7 @@ export class PropertiesService {
 
     const property = await this.propertyRepository.findOne({
       where: whereCondition,
-      relations: ['images', 'features', 'landlord'],
+      relations: ['images', 'features', 'landlord', 'landlord.properties'],
     });
 
     if (!property) {

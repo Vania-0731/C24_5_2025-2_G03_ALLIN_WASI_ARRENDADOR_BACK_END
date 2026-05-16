@@ -43,7 +43,7 @@ export class TenantsService {
         userId,
         phone: '',
         code: '',
-        carrer: '',
+        career: '',
         cicle: '',
         monthly_budget: 0,
         origin_department: '',
@@ -52,7 +52,6 @@ export class TenantsService {
     }
     return entity;
   }
-
   async update(id: string, dto: UpdateTenantDto) {
     const entity = await this.findOne(id);
     Object.assign(entity, dto);
