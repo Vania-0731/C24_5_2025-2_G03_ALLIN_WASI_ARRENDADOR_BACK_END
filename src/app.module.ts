@@ -15,6 +15,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
     AiModule,
     ActivitiesModule,
     FavoritesModule,
+    ReviewsModule,
   ],
 })
 export class AppModule {}
