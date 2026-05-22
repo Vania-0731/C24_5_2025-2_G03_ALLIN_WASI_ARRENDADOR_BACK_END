@@ -62,6 +62,10 @@ export class User {
     timezone: string;
   };
 
+  @ApiProperty({ description: 'Última vez que el usuario estuvo activo', required: false })
+  @Column({ type: 'timestamp', nullable: true })
+  lastActiveAt?: Date;
+
   @ApiProperty({ description: 'Fecha de creación' })
   @CreateDateColumn()
   createdAt: Date;

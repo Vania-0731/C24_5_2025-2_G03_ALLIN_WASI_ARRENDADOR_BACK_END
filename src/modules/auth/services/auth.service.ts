@@ -61,7 +61,10 @@ export class AuthService {
               roleId: role.id,
             });
           } else if (existing) {
-            user = existing;
+            // Siempre actualizar la foto de Google aunque el usuario ya exista
+            user = await this.usersService.update(existing.id, {
+              profilePicture,
+            });
           } else {
             throw e;
           }
@@ -151,6 +154,7 @@ export class AuthService {
         user = await this.usersService.create({
           fullName: fullName || email,
           email,
+          profilePicture,
           googleId,
           isVerified: true,
           roleId: role.id,
@@ -166,6 +170,7 @@ export class AuthService {
     } else {
       const updates: any = {};
       if (!user.googleId && googleId) updates.googleId = googleId;
+      if (profilePicture && user.profilePicture !== profilePicture) updates.profilePicture = profilePicture;
       if (!user.isVerified) updates.isVerified = true;
       const userWithRole = await this.usersService.findById(user.id);
       if (userWithRole.role?.name !== desiredRoleName) {

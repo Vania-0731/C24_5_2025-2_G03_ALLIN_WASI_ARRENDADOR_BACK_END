@@ -33,6 +33,6 @@ import { RolesModule } from '../roles/roles.module';
   ],
   providers: [AuthService, DomainValidationService, GoogleStrategy, JwtStrategy],
   controllers: [AuthController, AuthTestController],
-  exports: [AuthService, DomainValidationService],
+  exports: [AuthService, DomainValidationService, JwtModule],
 })
 export class AuthModule {}

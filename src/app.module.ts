@@ -15,6 +15,9 @@ import { RolesModule } from './modules/roles/roles.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { CommunityModule } from './modules/community/community.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
     AiModule,
     ActivitiesModule,
     FavoritesModule,
+    ReviewsModule,
+    CommunityModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
