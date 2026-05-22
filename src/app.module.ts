@@ -17,6 +17,7 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { CommunityModule } from './modules/community/community.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { CommunityModule } from './modules/community/community.module';
     FavoritesModule,
     ReviewsModule,
     CommunityModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
