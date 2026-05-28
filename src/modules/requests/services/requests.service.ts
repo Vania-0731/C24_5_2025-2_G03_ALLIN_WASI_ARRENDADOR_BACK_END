@@ -39,7 +39,7 @@ export class RequestsService {
   }
 
   async findOne(id: string) {
-    const entity = await this.repo.findOne({ where: { id }, relations: ['property', 'tenant'] });
+    const entity = await this.repo.findOne({ where: { id }, relations: ['property', 'tenant', 'tenant.user'] });
     if (!entity) throw new NotFoundException('Solicitud no encontrada');
     return entity;
   }
@@ -49,6 +49,7 @@ export class RequestsService {
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.property', 'property')
       .leftJoinAndSelect('req.tenant', 'tenant')
+      .leftJoinAndSelect('tenant.user', 'user')
       .where('property.landlordId = :landlordId', { landlordId })
       .orderBy('req.createdAt', 'DESC');
     if (status) qb.andWhere('req.status = :status', { status });
