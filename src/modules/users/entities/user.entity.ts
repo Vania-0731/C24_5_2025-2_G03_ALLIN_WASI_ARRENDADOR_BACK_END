@@ -35,6 +35,9 @@ export class User {
   @Column({ nullable: true, unique: true })
   googleId?: string;
 
+  @Column({ nullable: true, select: false })
+  password?: string;
+
   @ApiProperty({ description: 'Indica si el usuario está verificado' })
   @Column({ default: false })
   isVerified: boolean;

@@ -25,6 +25,12 @@ export class CreateUserDto {
   @IsString()
   googleId?: string;
 
+  @ApiPropertyOptional({ description: 'Contraseña en texto plano para registro tradicional' })
+  @IsOptional()
+  @IsString()
+  @Length(6, 100, { message: 'La contraseña debe tener entre 6 y 100 caracteres' })
+  password?: string;
+
   @ApiPropertyOptional({ description: 'Indica si el usuario está verificado' })
   @IsOptional()
   @IsBoolean()

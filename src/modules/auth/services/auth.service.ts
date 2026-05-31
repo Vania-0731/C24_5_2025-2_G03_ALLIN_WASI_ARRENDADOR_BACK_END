@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/services/users.service';
 import { DomainValidationService, UserType } from './domain-validation.service';
@@ -6,6 +6,7 @@ import { User } from '../../users/entities/user.entity';
 import { TenantsService } from '../../tenants/services/tenants.service';
 import { LandlordsService } from '../../landlords/services/landlords.service';
 import { RolesService } from '../../roles/services/roles.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -184,6 +185,87 @@ export class AuthService {
     }
     return { user, created, updated };
   }
+
+  async register(payload: { email: string; fullName?: string; password?: string; role?: string }): Promise<{ user: User; access_token: string; registrationComplete: boolean }> {
+    const email = payload.email.trim();
+    const existing = await this.usersService.findByEmail(email);
+    if (existing) {
+      throw new ConflictException('El email ya está registrado');
+    }
+
+    const desiredRoleName = payload.role?.toLowerCase() === 'landlord' ? 'landlord' : (payload.role?.toLowerCase() === 'tenant' ? 'tenant' : this.domainValidationService.inferRole(email));
+    const role = await this.rolesService.findByName(desiredRoleName);
+    if (!role) {
+      throw new Error(`Rol '${desiredRoleName}' no encontrado`);
+    }
+
+    let hashedPassword = undefined;
+    if (payload.password) {
+      hashedPassword = await bcrypt.hash(payload.password, 10);
+    }
+
+    const user = await this.usersService.create({
+      fullName: payload.fullName || email.split('@')[0],
+      email,
+      password: hashedPassword,
+      isVerified: false,
+      roleId: role.id,
+    });
+
+    // Auto-create initial blank tenant or landlord profiles
+    if (desiredRoleName === 'tenant') {
+      await this.tenantsService.ensureExistsForUser(user.id).catch(() => null);
+    } else {
+      await this.landlordsService.ensureExistsForUser(user.id).catch(() => null);
+    }
+
+    const { access_token } = await this.generateJwtToken(user);
+    return { user, access_token, registrationComplete: false };
+  }
+
+  async login(payload: { email: string; password?: string }): Promise<{ user: User; access_token: string; registrationComplete: boolean }> {
+    const email = payload.email.trim();
+    // Utilizar query builder para poder traer la contraseña oculta ('select: false')
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const userWithPassword = await this.usersService.findById(user.id);
+    const dbUserRaw = await this.usersService['userRepository']
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .leftJoinAndSelect('user.role', 'role')
+      .where('user.id = :id', { id: user.id })
+      .getOne();
+
+    if (!dbUserRaw || !dbUserRaw.password) {
+      throw new UnauthorizedException('Este usuario no tiene contraseña registrada (inicia sesión con Google)');
+    }
+
+    const isMatch = await bcrypt.compare(payload.password || '', dbUserRaw.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const roleName = userWithPassword.role?.name;
+    let registrationComplete = false;
+    if (roleName === 'landlord') {
+      const landlord = await this.landlordsService.findByUserId(user.id).catch(() => null);
+      // Profile is complete only if required fields are filled (not blank shell)
+      registrationComplete = !!landlord && !!landlord.phone && landlord.phone.length > 0 && !!landlord.dni && landlord.dni.length > 0;
+    } else if (roleName === 'tenant') {
+      const tenant = await this.tenantsService.findByUserId(user.id).catch(() => null);
+      // Profile is complete only if required fields are filled (not blank shell)
+      registrationComplete = !!tenant && !!tenant.phone && tenant.phone.length > 0 && !!tenant.code && tenant.code.length > 0;
+    } else {
+      registrationComplete = true;
+    }
+
+    const { access_token } = await this.generateJwtToken(user);
+    return { user: userWithPassword, access_token, registrationComplete };
+  }
+
   async completeRegistration(userId: string, registrationData: any): Promise<User> {
     return await this.usersService.update(userId, registrationData);
   }
