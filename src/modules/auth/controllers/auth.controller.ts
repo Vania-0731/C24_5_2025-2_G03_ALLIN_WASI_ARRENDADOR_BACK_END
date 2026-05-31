@@ -100,10 +100,12 @@ export class AuthController {
       
       if (roleName === 'landlord') {
         const landlord = await this.landlordsService.findByUserId(user.id).catch(() => null);
-        registrationComplete = !!landlord;
+        // Only complete if required fields are populated (not blank shell)
+        registrationComplete = !!landlord && !!landlord.phone && landlord.phone.length > 0 && !!landlord.dni && landlord.dni.length > 0;
       } else if (roleName === 'tenant') {
         const tenant = await this.tenantsService.findByUserId(user.id).catch(() => null);
-        registrationComplete = !!tenant;
+        // Only complete if required fields are populated (not blank shell)
+        registrationComplete = !!tenant && !!tenant.phone && tenant.phone.length > 0 && !!tenant.code && tenant.code.length > 0;
       } else {
         registrationComplete = true;
       }
@@ -125,5 +127,22 @@ export class AuthController {
     }
 
     return res.status(200).json(payloadResp);
+  }
+
+  @Post('register')
+  @ApiOperation({ summary: 'Registrar un nuevo usuario con correo y contraseña' })
+  @ApiResponse({ status: 201, description: 'Usuario creado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos incorrectos' })
+  @ApiResponse({ status: 409, description: 'El email ya está registrado' })
+  async register(@Body() dto: any) {
+    return await this.authService.register(dto);
+  }
+
+  @Post('login')
+  @ApiOperation({ summary: 'Iniciar sesión con correo y contraseña' })
+  @ApiResponse({ status: 200, description: 'Autenticación exitosa' })
+  @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
+  async login(@Body() dto: any) {
+    return await this.authService.login(dto);
   }
 }

@@ -143,10 +143,11 @@ export class UsersService {
         // Check if documents are being updated
         const isUpdatingDocuments = dniFrontUrl !== undefined || dniBackUrl !== undefined || utilityBillUrl !== undefined;
 
-        // If landlord exists with pending/verified status, block document updates
+        // If landlord exists with pending/verified status, block document updates only if they actually have documents already uploaded (not initial registration complete)
         if (landlord && isUpdatingDocuments) {
           const currentStatus = landlord.verificationStatus;
-          if (currentStatus === 'pending' || currentStatus === 'verified') {
+          const hasExistingDocs = !!landlord.dniFrontUrl || !!landlord.dniBackUrl || !!landlord.utilityBillUrl;
+          if (hasExistingDocs && (currentStatus === 'pending' || currentStatus === 'verified')) {
             throw new BadRequestException(
               currentStatus === 'pending'
                 ? 'No puedes modificar los documentos mientras están en revisión.'
